@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 // Define the Product type
 interface Product {
     id: string;
@@ -17,7 +18,7 @@ const ProductForm: React.FC = () => {
         product_price: 0,
         product_description: '',
     });
-
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     const [message, setMessage] = useState<string>('');
 
     const handleChange = (
@@ -36,6 +37,7 @@ const ProductForm: React.FC = () => {
         setMessage(''); // Clear any previous messages
 
         try {
+            setIsSubmitting(true)
             const supabase = await createClient()
             const { data, error } = await supabase.from('Products').insert([formData]);
 
@@ -56,8 +58,12 @@ const ProductForm: React.FC = () => {
         } catch (err) {
             console.error(err);
             setMessage('An unexpected error occurred.');
+        } finally {
+            setIsSubmitting(false)
+            location.reload();
         }
     };
+
 
     return (
         <div className="p-6 bg-background rounded-lg shadow-md">
