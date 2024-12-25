@@ -8,7 +8,7 @@ interface ReusableTableData {
   status: 'Active' | 'Inactive' | 'Suspended';
   age: number;
   number: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: 'Male' | 'FeMale' | 'Other';
   street: string;
   city: string;
   state: string;
@@ -34,7 +34,7 @@ const userValidationSchema = z.object({
   number: z.string()
     .regex(/^\+?[1-9][0-9]{7,14}$/, "Invalid phone number")
     .optional(),
-  gender: z.enum(['Male', 'Female', 'Other'], {
+  gender: z.enum(['Male', 'FeMale', 'Other'], {
     errorMap: () => ({ message: "Invalid gender" }),
   }),
   street: z.string().optional(),
@@ -104,15 +104,15 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
         name: 'status',
         label: 'Status',
         options: [
-          { label: 'Active', value: 'active' },
-          { label: 'Inactive', value: 'inactive' },
-          { label: 'Suspended', value: 'suspended' }
+          { label: 'Active', value: 'Active' },
+          { label: 'Inactive', value: 'Inactive' },
+          { label: 'Suspended', value: 'Suspended' }
         ]
       },
       options: [
-        { label: 'Active', value: 'active' },
-        { label: 'Inactive', value: 'inactive' },
-        { label: 'Suspended', value: 'suspended' }
+        { label: 'Active', value: 'Active' },
+        { label: 'Inactive', value: 'Inactive' },
+        { label: 'Suspended', value: 'Suspended' }
       ]
     },
     {
@@ -158,18 +158,18 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
       type: "select",
       editable: true,
       options: [
-        { label: 'Male', value: 'male' },
-        { label: 'Female', value: 'female' },
-        { label: 'Other', value: 'other' }
+        { label: 'Male', value: 'Male' },
+        { label: 'FeMale', value: 'Female' },
+        { label: 'Other', value: 'Other' }
       ],
       editConfig: {
         type: 'select',
         name: 'gender',
         label: 'Gender',
         options: [
-          { label: 'Male', value: 'male' },
-          { label: 'Female', value: 'female' },
-          { label: 'Other', value: 'other' }
+          { label: 'Male', value: 'Male' },
+          { label: 'FeMale', value: 'Female' },
+          { label: 'Other', value: 'Other' }
         ]
       }
     },
@@ -298,6 +298,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
   export: {
     enabled: true,
     formats: ['csv', 'excel', 'pdf'],
+    fields: ["name","email","status"],
     filename: 'users-export'
   },
   import: {
@@ -328,9 +329,9 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
         label: 'Status',
         type: 'select',
         options: [
-          { label: 'Active', value: 'active' },
-          { label: 'Inactive', value: 'inactive' },
-          { label: 'Suspended', value: 'suspended' }
+          { label: 'Active', value: 'Active' },
+          { label: 'Inactive', value: 'Inactive' },
+          { label: 'Suspended', value: 'Suspended' }
         ]
       },
       {
@@ -338,9 +339,9 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
         label: 'Gender',
         type: 'select',
         options: [
-          { label: 'Male', value: 'male' },
-          { label: 'Female', value: 'female' },
-          { label: 'Other', value: 'other' }
+          { label: 'Male', value: 'Male' },
+          { label: 'FeMale', value: 'Female' },
+          { label: 'Other', value: 'Other' }
         ]
       }
     ]

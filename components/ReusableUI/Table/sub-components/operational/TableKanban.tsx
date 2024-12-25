@@ -274,7 +274,6 @@ export default function KanbanBoard({ config, onToogle, endpoint }: Kanban) {
     }
 
     function onDragEnd(event: DragEndEvent) {
-        console.log({ event })
         const overData = event.over?.data.current?.task;
         if (overData) {
             UpdateData(overData);
@@ -325,7 +324,7 @@ export default function KanbanBoard({ config, onToogle, endpoint }: Kanban) {
 
         if (!isActiveATask) return;
 
-        // Im dropping a Task over another Task
+        // Im dropping a Task over anOther Task
         if (isActiveATask && isOverATask) {
             setTasks((tasks) => {
                 const activeIndex = tasks.findIndex((t) => t.id === activeId);

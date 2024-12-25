@@ -15,8 +15,8 @@ export const filterOptions: Record<string, Array<{ label: string; value: string 
         { label: 'Industrial', value: 'industrial' }
     ],
     gender: [
-        { label: 'Male', value: 'male' },
-        { label: 'Female', value: 'female' },
-        { label: 'Other', value: 'other' }
+        { label: 'Male', value: 'Male' },
+        { label: 'FeMale', value: 'Female' },
+        { label: 'Other', value: 'Other' }
     ]
 }; 
