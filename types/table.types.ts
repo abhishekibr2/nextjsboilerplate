@@ -229,3 +229,8 @@ export interface ApiKanbanResponse {
   };
   message?: string;
 }
+
+export interface ApiUpdateKanbanResponse {
+  status: number;
+  message?: string;
+}

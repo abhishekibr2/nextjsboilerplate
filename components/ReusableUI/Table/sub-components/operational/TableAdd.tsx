@@ -152,7 +152,6 @@ export function TableAdd({ config, onSuccess , endpoint}: TableAddProps) {
             });
             onSuccess?.();
         } catch (error) {
-            console.log({ error })
             console.error("Submission error:", error);
             toast({
                 title: "Error",
@@ -360,7 +359,6 @@ export function TableAdd({ config, onSuccess , endpoint}: TableAddProps) {
                     onSubmit={handleSubmit((data) => {
                         return onSubmit(data);
                     }, (errors) => {
-                        console.log({ errors });
                         toast({
                             title: "Validation Error",
                             description: "Please check the form for errors",
