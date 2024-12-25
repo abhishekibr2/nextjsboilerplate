@@ -101,6 +101,7 @@ export interface ExportConfig {
   enabled: boolean;
   formats: Array<'csv' | 'excel' | 'pdf'>;
   filename?: string;
+  fields?: string[];
 }
 
 export interface ImportConfig {

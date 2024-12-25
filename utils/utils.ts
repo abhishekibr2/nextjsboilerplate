@@ -100,7 +100,6 @@ export async function FetchTableData<T>(
   }
 }
 
-
 export async function FetchPopulatedData<T>(endpoint: string, fieldName: string, source: string): Promise<ApiResponse<T>> {
   try {
     const supabase = createClient()
@@ -417,7 +416,6 @@ export async function UpdateKanbanData(
     columnOptions: string[];
   }
 ): Promise<ApiUpdateKanbanResponse> {
-  console.log('Original config:', config);
   try {
     const supabase = createClient();
 

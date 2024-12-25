@@ -348,7 +348,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                     column.editConfig.validation.zodSchema.parse(numberValue);
                 }
             } else if (column.editConfig?.validation?.zodSchema) {
-                // For other types, apply validation as before
+                // For Other types, apply validation as before
                 column.editConfig.validation.zodSchema.parse(newValue);
             }
 
@@ -743,6 +743,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                             endpoint={endpoint}
                             filters={filters.length > 0 ? JSON.stringify(filters) : undefined}
                             search={searchTerm}
+                            data={data}
                         />
                     )}
                     {config.columnToggle?.enabled && (

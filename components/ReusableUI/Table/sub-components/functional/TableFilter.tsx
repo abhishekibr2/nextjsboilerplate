@@ -260,9 +260,9 @@ export function TableFilter({ columns, onFilterChange, sorting, onLoadFilter, ta
                             <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">FeMale</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                     </Select>
                 )
@@ -371,9 +371,11 @@ export function TableFilter({ columns, onFilterChange, sorting, onLoadFilter, ta
             let filters = response.data;
             if (response.data.length !== 0) {
                 filters = filters.map((filter) => {
-                    // Parse the `filters` field if it's a stringified JSON
                     if (filter.filters && typeof filter.filters === "string") {
                         filter.filters = JSON.parse(filter.filters);
+                    }
+                    if (filter.sorting && typeof filter.sorting === "string") {
+                        filter.sorting = JSON.parse(filter.sorting);
                     }
                     return filter; // Return the updated filter object
                 });

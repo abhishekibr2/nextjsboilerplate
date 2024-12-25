@@ -47,7 +47,7 @@ interface ValidationRules {
     zodSchema?: any;
 }
 
-export function TableAdd({ config, onSuccess , endpoint}: TableAddProps) {
+export function TableAdd({ config, onSuccess, endpoint }: TableAddProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
@@ -105,7 +105,6 @@ export function TableAdd({ config, onSuccess , endpoint}: TableAddProps) {
     };
 
     const onSubmit = async (data: any) => {
-
         if (!data) {
             console.error("No data provided to onSubmit");
             return;
@@ -137,7 +136,7 @@ export function TableAdd({ config, onSuccess , endpoint}: TableAddProps) {
             }
 
 
-            const response = await AddRow(endpoint , transformedData);
+            const response = await AddRow(endpoint, transformedData);
 
             if (!response) {
                 throw new Error(`Failed to add ${config.title || "item"}`);
