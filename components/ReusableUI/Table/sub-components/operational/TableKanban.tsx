@@ -24,7 +24,7 @@ import { BoardContainer } from "./kanban/BoardColumn";
 import { BoardColumn } from "./kanban/BoardColumn";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { GetKanbanData } from "@/utils/utils";
+import { GetKanbanData, UpdateKanbanData } from "@/utils/utils";
 
 
 interface Kanban {
@@ -70,6 +70,20 @@ export default function KanbanBoard({ config, onToogle, endpoint }: Kanban) {
         })
     );
 
+
+    const UpdateData = async (data: any) => {
+        if (!data) {
+            return;
+        }
+        try {
+            const response = await UpdateKanbanData(data, endpoint, config)
+            if (response.status != 200) {
+                throw new Error("Error Fetching Kanban Data!");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
 
     useEffect(() => {
         const FetchData = async () => {
@@ -260,6 +274,11 @@ export default function KanbanBoard({ config, onToogle, endpoint }: Kanban) {
     }
 
     function onDragEnd(event: DragEndEvent) {
+        console.log({ event })
+        const overData = event.over?.data.current?.task;
+        if (overData) {
+            UpdateData(overData);
+        }
         setActiveColumn(null);
         setActiveTask(null);
 

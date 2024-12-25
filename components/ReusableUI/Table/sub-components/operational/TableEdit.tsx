@@ -198,7 +198,6 @@ export function TableEdit({ config, endpoint, data, onSuccess }: TableEditProps)
             if (onSuccess) {
                 await onSuccess();
             }   
-            console.log({ response })
             setFormData(response.data);
             form.reset();
         } catch (error) {

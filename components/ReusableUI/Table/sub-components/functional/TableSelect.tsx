@@ -10,7 +10,7 @@ export function TableSelect({ checked, onChange, indeterminate = false }: TableS
     return (
         <Checkbox 
             checked={checked}
-            className="translate-y-[2px]"
+            className="translate-y-[2px] mr-4"
             onCheckedChange={onChange}
             ref={(el) => {
                 if (el) {

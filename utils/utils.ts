@@ -1,4 +1,4 @@
-import { AddRowResponse, ApiFilterResponse, ApiKanbanResponse, ApiResponse, DeleteRowResponse, Kanban, TableProps } from "@/types/table.types";
+import { AddRowResponse, ApiFilterResponse, ApiKanbanResponse, ApiResponse, ApiUpdateKanbanResponse, DeleteRowResponse, Kanban, TableProps } from "@/types/table.types";
 import { createClient } from '@/utils/supabase/client'
 import { redirect } from "next/navigation";
 
@@ -262,7 +262,6 @@ export async function UpdateRow<T>(endpoint: string, rowData: any): Promise<AddR
 export async function DeleteRow<T>(endpoint: string, rowId: string): Promise<DeleteRowResponse> {
   try {
     const supabase = createClient()
-    console.log({ endpoint, rowId })
     await supabase.from(endpoint).delete().eq('id', rowId)
 
     return {
@@ -319,7 +318,6 @@ export async function BulkUpdate<T>(endpoint: string, updatedData: any): Promise
 export async function BulkDelete<T>(endpoint: string, rowId: string): Promise<DeleteRowResponse> {
   try {
     const supabase = createClient()
-    console.log({ endpoint, rowId })
     await supabase.from(endpoint).delete().eq('id', rowId)
 
     return {
@@ -335,7 +333,6 @@ export async function BulkDelete<T>(endpoint: string, rowId: string): Promise<De
 export async function AddFilter<T>(rowData: any): Promise<ApiResponse<T>> {
   try {
     const supabase = createClient()
-    console.log({ rowData })
     const { data, error } = await supabase.from("Filters").insert(rowData).select()
 
     if (error) throw error
@@ -357,7 +354,6 @@ export async function AddFilter<T>(rowData: any): Promise<ApiResponse<T>> {
       message: 'Data added successfully'
     };
   } catch (error) {
-    console.log(error)
     console.error('Error adding row:', error);
     throw error;
   }
@@ -383,12 +379,11 @@ export async function GetFilters<T>(tableName: string, user: string): Promise<Ap
   }
 }
 
-export async function GetKanbanData<T>(config: Kanban, endpoint: string): Promise<ApiKanbanResponse> {
+export async function GetKanbanData(config: Kanban, endpoint: string): Promise<ApiKanbanResponse> {
   try {
     const supabase = createClient()
     const select = `${config?.columnIdName},${config?.columnContent},${config?.identification}`
     const { data, error } = await supabase.from(endpoint).select(select)
-    console.log({ data })
     if (error) throw error
     if (!data) {
       throw new Error('No data returned from Supabase after insert');
@@ -409,4 +404,41 @@ export async function GetKanbanData<T>(config: Kanban, endpoint: string): Promis
     throw error;
   }
 
+}
+
+export async function UpdateKanbanData(
+  config: Record<string, any>,
+  endpoint: string,
+  columnData: {
+    enabled: boolean;
+    identification: string;
+    columnIdName: string;
+    columnContent: string;
+    columnOptions: string[];
+  }
+): Promise<ApiUpdateKanbanResponse> {
+  console.log('Original config:', config);
+  try {
+    const supabase = createClient();
+
+    // Transform the config keys based on columnData mapping
+    const transformedConfig: Record<string, any> = {};
+    if (config.columnId !== undefined) {
+      transformedConfig[columnData.columnContent] = config.columnId;
+    }
+
+    const { error } = await supabase
+      .from(endpoint)
+      .update(transformedConfig)
+      .eq(columnData.identification, config.id);
+
+    if (error) throw error;
+    return {
+      status: 200,
+      message: 'Data added successfully'
+    };
+  } catch (error) {
+    console.error('Error adding row:', error);
+    throw error;
+  }
 }

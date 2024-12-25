@@ -302,37 +302,60 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
         }));
     }, []);
 
-    const handleCellEdit = useCallback(async (newValue: string) => {
+
+    const handleCellDoubleClick = useCallback((e: React.MouseEvent, column: any, row: any, rowIndex: number) => {
+        if (!column.editable) return;
+
+        e.preventDefault();
+        const value = getNestedValue(row, column.accessorKey);
+
+        // Don't set editing state if the cell is already being edited
+        if (editingCell?.rowIndex === rowIndex && editingCell?.columnKey === column.accessorKey) return;
+
+        setEditingCell({
+            rowIndex,
+            columnKey: column.accessorKey,
+            value: value
+        });
+
+        // Focus the input after a brief delay to ensure the input is rendered
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
+        }, 0);
+    }, [editingCell]);
+
+    const handleCellEdit = useCallback(async (newValue: string | number) => {
         if (!editingCell) return;
 
         const column = config.columns.find(col => col.accessorKey === editingCell.columnKey);
         if (!column) return;
 
         try {
-            if (column.editConfig?.validation?.zodSchema) {
+            let processedValue = newValue;
+
+            // Handle number type fields
+            if (column.type === 'number' || column.editConfig?.type === 'number') {
+                const numberValue = Number(newValue);
+                if (isNaN(numberValue)) {
+                    throw new Error('Invalid number');
+                }
+                processedValue = numberValue;
+
+                // Apply validation if exists
+                if (column.editConfig?.validation?.zodSchema) {
+                    column.editConfig.validation.zodSchema.parse(numberValue);
+                }
+            } else if (column.editConfig?.validation?.zodSchema) {
+                // For other types, apply validation as before
                 column.editConfig.validation.zodSchema.parse(newValue);
             }
 
-            let processedValue = newValue;
             const originalValue = getNestedValue(data[editingCell.rowIndex], editingCell.columnKey);
 
-            if (column.type === 'date' ||
-                column.accessorKey.toLowerCase().includes('date') ||
-                column.accessorKey === 'created_at' ||
-                column.accessorKey === 'updated_at') {
-                const newDate = new Date(newValue);
-                processedValue = !isNaN(newDate.getTime()) ? newDate.toISOString() : newValue;
-
-                const originalDate = new Date(originalValue);
-                const formattedOriginalValue = !isNaN(originalDate.getTime())
-                    ? originalDate.toISOString()
-                    : originalValue;
-
-                if (processedValue === formattedOriginalValue) {
-                    setEditingCell(null);
-                    return;
-                }
-            } else if (String(processedValue) === String(originalValue)) {
+            // Check if the value has actually changed
+            if (processedValue === originalValue) {
                 setEditingCell(null);
                 return;
             }
@@ -354,13 +377,14 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
         } catch (error) {
             toast({
                 title: "Validation Error",
-                description: "Invalid input value",
+                description: error instanceof Error ? error.message : "Invalid input value",
                 variant: "destructive"
             });
         } finally {
             setEditingCell(null);
         }
     }, [editingCell, data, config.columns, toast]);
+
 
     const handleBatchUpdate = useCallback(async () => {
         setOperationLoading(true);
@@ -475,21 +499,39 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
             edit => edit.rowIndex === rowIndex && edit.columnKey === column.accessorKey
         )?.value;
 
-        if (isEditing)
-            if (isEditing) {
-                if (column.editConfig?.type === 'select') {
-                    return (
+        if (isEditing) {
+            const cellStyle = "p-0"; // Remove padding when editing
+
+            if (column.type === 'number' || column.editConfig?.type === 'number') {
+                return (
+                    <div className={cellStyle}>
+                        <Input
+                            ref={inputRef}
+                            className="h-8 w-full border-0 focus:ring-0 bg-transparent text-right"
+                            type="number"
+                            defaultValue={value}
+                            onBlur={(e) => handleCellEdit(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleCellEdit(e.currentTarget.value);
+                                if (e.key === 'Escape') setEditingCell(null);
+                            }}
+                        />
+                    </div>
+                )
+            }
+            if (column.editConfig?.type === 'select') {
+                return (
+                    <div className={cellStyle}>
                         <Select
-                            defaultValue={(() => {
-                                const option = column.options?.find((opt: any) => opt.label === editingCell?.value);
-                                return option?.value || editingCell?.value;
-                            })()}
-                            onValueChange={(value) => {
-                                const selectedOption = column.options?.find((opt: any) => opt.value === value);
-                                handleCellEdit(selectedOption?.label || value);
+                            defaultValue={String(value)}
+                            onValueChange={(newValue) => {
+                                const selectedOption = column.editConfig.options?.find(
+                                    (opt: any) => opt.value === newValue
+                                );
+                                handleCellEdit(selectedOption?.label || newValue);
                             }}
                         >
-                            <SelectTrigger className="h-8">
+                            <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0">
                                 <SelectValue placeholder="Select..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -500,28 +542,34 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                                 ))}
                             </SelectContent>
                         </Select>
-                    );
-                }
+                    </div>
+                );
+            }
+            if (column.type === 'number') {
+                return pendingValue ?? value ?? '-';
+            }
 
-                const isDateField = column.type === 'date' ||
-                    column.accessorKey.toLowerCase().includes('date') ||
-                    column.accessorKey === 'createdAt' ||
-                    column.accessorKey === 'updatedAt';
+            const isDateField = column.type === 'date' ||
+                column.accessorKey.toLowerCase().includes('date') ||
+                column.accessorKey === 'createdAt' ||
+                column.accessorKey === 'updatedAt';
 
-                return (
+            return (
+                <div className={cellStyle}>
                     <Input
                         ref={inputRef}
-                        className="h-8 w-full"
+                        className="h-8 w-full border-0 focus:ring-0 bg-transparent"
                         type={isDateField ? 'date' : column.editConfig?.type || 'text'}
-                        defaultValue={isDateField ? formatDateForInput(editingCell.value) : editingCell.value}
+                        defaultValue={isDateField ? formatDateForInput(value) : value}
                         onBlur={(e) => handleCellEdit(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') handleCellEdit(e.currentTarget.value);
                             if (e.key === 'Escape') setEditingCell(null);
                         }}
                     />
-                );
-            }
+                </div>
+            );
+        }
 
         if (column.accessorKey === 'status') {
             const status = String(pendingValue || value).toLowerCase();
@@ -597,7 +645,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
         return (
             <TableKanban
                 config={config.kanban}
-                onToogle={() => { setKanbanView(false) }}
+                onToogle={() => { setKanbanView(false); loadTableData() }}
                 endpoint={endpoint}
             />
         )
@@ -709,9 +757,9 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
             </div>
 
             {/* Table Section */}
-            <div className="relative border rounded-lg overflow-hidden shadow-sm px-2">
+            <div className="relative border rounded-lg overflow-hidden shadow-sm">
                 {operationLoading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-10 flex items-center justify-center">
                         <div className="flex items-center gap-2">
                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-r-transparent" />
                             <span className="text-muted-foreground">Loading...</span>
@@ -837,18 +885,12 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                                                     pendingEdits.some(edit =>
                                                         edit.rowIndex === rowIndex &&
                                                         edit.columnKey === column.accessorKey
-                                                    ) && "bg-muted/50"
+                                                    ) && "bg-muted/50",
+                                                    editingCell?.rowIndex === rowIndex &&
+                                                    editingCell?.columnKey === column.accessorKey &&
+                                                    "p-0" // Remove padding when editing
                                                 )}
-                                                onDoubleClick={(e) => {
-                                                    if (column.editable) {
-                                                        e.preventDefault();
-                                                        setEditingCell({
-                                                            rowIndex,
-                                                            columnKey: column.accessorKey,
-                                                            value: getNestedValue(row, column.accessorKey)
-                                                        });
-                                                    }
-                                                }}
+                                                onDoubleClick={(e) => handleCellDoubleClick(e, column, row, rowIndex)}
                                             >
                                                 {renderCell(row, column, rowIndex)}
                                             </TableCell>
