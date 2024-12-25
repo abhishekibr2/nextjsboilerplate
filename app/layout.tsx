@@ -39,6 +39,7 @@ export default function RootLayout({
                     <ThemeSwitcher />
                     <Link href="/protected/product">Products</Link>
                     <Link href="/protected/Invoice">Invoices</Link>
+                    <Link href="/protected/table">Table</Link>
                   </div>
                   {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
                 </div>
