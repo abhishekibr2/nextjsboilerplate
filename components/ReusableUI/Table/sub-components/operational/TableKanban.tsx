@@ -23,8 +23,8 @@ import { Task, TaskCard } from "./kanban/TaskCard";
 import { BoardContainer } from "./kanban/BoardColumn";
 import { BoardColumn } from "./kanban/BoardColumn";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { GetKanbanData, UpdateKanbanData } from "@/utils/utils";
+import { Loader2, Table } from "lucide-react";
+import { GetKanbanData, UpdateKanbanData } from "../../utils/utils";
 
 
 interface Kanban {
@@ -214,7 +214,7 @@ export default function KanbanBoard({ config, onToogle, endpoint }: Kanban) {
             <div className="text-4xl font-semibold pb-4">
                 <div className="flex my-2">
                     Kanban View
-                    <Button variant={"outline"} className="text-center items-center justify-center align-center mx-4" onClick={() => { onToogle() }}>Toogle Table View</Button>
+                    <Button variant={"outline"} className="text-center items-center justify-center align-center mx-4" onClick={() => { onToogle() }}><Table /> Toogle Table View</Button>
                 </div>
             </div>
 

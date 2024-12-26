@@ -25,7 +25,7 @@ interface TablePaginationProps {
 export function TablePagination({ config, state, onChange }: TablePaginationProps) {
 
     return (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between mb-4">
             <div className="flex items-center">
                 <p className="text-sm text-gray-500 w-[100px] mr-2">Rows per page</p>
                 <Select
@@ -50,7 +50,7 @@ export function TablePagination({ config, state, onChange }: TablePaginationProp
                 </Select>
             </div>
 
-            <Pagination>
+            <Pagination className="ml-[-160px]">
                 <PaginationContent>
                     <PaginationItem>
                         <PaginationPrevious

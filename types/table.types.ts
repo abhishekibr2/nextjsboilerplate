@@ -85,6 +85,7 @@ export interface FilterValue {
   operator: FilterOperator;
   value: any;
   secondValue?: any; // For range/between operations
+  type?: any;
 }
 
 export interface FilterConfig {

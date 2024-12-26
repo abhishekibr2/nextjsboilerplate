@@ -24,7 +24,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { AddFilter, GetFilters, GetUser } from "@/utils/utils"
+import { AddFilter, GetFilters, GetUser } from "../../utils/utils"
 
 interface TableFilterProps {
     config: FilterConfig;
@@ -146,11 +146,28 @@ export function TableFilter({ columns, onFilterChange, sorting, onLoadFilter, ta
         setLocalFilters(newFilters);
     }
 
+
     const handleApplyFilters = () => {
-        setFilters(localFilters)
-        onFilterChange(localFilters)
-        setIsOpen(false)
-    }
+        // Format filters to match the expected structure
+        const formattedFilters = localFilters.map(filter => {
+            const column = columns.find(col => col.accessorKey === filter.column);
+            return {
+                column: filter.column,
+                operator: filter.operator,
+                value: filter.value,
+                secondValue: filter.secondValue,
+                type: column?.type || 'text'
+            };
+        }).filter(filter =>
+            filter.column &&
+            filter.operator &&
+            (filter.value !== undefined && filter.value !== '')
+        );
+
+        setFilters(formattedFilters);
+        onFilterChange(formattedFilters);
+        setIsOpen(false);
+    };
 
     const renderValueInput = (filter: FilterValue, index: number) => {
         const selectedColumn = columns.find(col => col.accessorKey === filter.column)
@@ -323,39 +340,45 @@ export function TableFilter({ columns, onFilterChange, sorting, onLoadFilter, ta
     }
 
     const handleSaveFilter = async () => {
+        if (!filterName.trim()) {
+            toast({
+                title: "Error",
+                description: "Please enter a filter name",
+                variant: "destructive"
+            });
+            return;
+        }
+
         try {
-            setLoading(true)
+            setLoading(true);
             const userId = await GetUser();
             const data = {
                 name: filterName,
                 filters: filters,
-                sorting: sorting,
-                tableName: tableName,
+                sorting,
+                tableName,
                 createdBy: userId
-            }
-            const response = await AddFilter(data)
+            };
 
-            if (response.status !== 200) {
-                throw new Error(response.message)
+            const response = await AddFilter(data);
+            if (response.status === 200) {
+                toast({
+                    title: "Success",
+                    description: "Filter saved successfully"
+                });
+                setSaveDialogOpen(false);
+                setFilterName("");
             }
-
-            toast({
-                title: "Success",
-                description: "Filter saved successfully",
-            })
-            setSaveDialogOpen(false)
-            setFilterName("")
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 title: "Error",
-                description: error.message || "Failed to save filter",
+                description: "Failed to save filter",
                 variant: "destructive"
-            })
-        }
-        finally {
+            });
+        } finally {
             setLoading(false);
         }
-    }
+    };
 
     const loadSavedFilters = async () => {
         try {

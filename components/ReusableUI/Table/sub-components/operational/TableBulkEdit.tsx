@@ -32,7 +32,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TableConfig } from "@/types/table.types"
-import { BulkUpdate } from "@/utils/utils"
+import { BulkUpdate } from "../../utils/utils"
 
 interface TableBulkEditProps {
     config: TableConfig

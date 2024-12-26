@@ -25,7 +25,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TableColumn, TableConfig } from "@/types/table.types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { AddRow } from "@/utils/utils";
+import { AddRow } from "../../utils/utils";
+
 
 interface TableAddProps {
     config: TableConfig;
