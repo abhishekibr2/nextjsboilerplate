@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { TableColumn, TableConfig } from "@/types/table.types"
-import { DeleteRow, UpdateRow } from "@/utils/utils"
+import { DeleteRow, UpdateRow } from "../../utils/utils"
 
 interface TableEditProps {
     config: TableConfig;
@@ -70,32 +70,32 @@ const hasValueChanged = (oldValue: any, newValue: any) => {
     // Handle undefined/null cases
     if (!oldValue && !newValue) return false;
     if (!oldValue || !newValue) return true;
-    
+
     // Handle arrays
     if (Array.isArray(oldValue) && Array.isArray(newValue)) {
         return JSON.stringify(oldValue) !== JSON.stringify(newValue);
     }
-    
+
     // Handle objects
     if (typeof oldValue === 'object' && typeof newValue === 'object') {
         return JSON.stringify(oldValue) !== JSON.stringify(newValue);
     }
-    
+
     // Handle primitive values
     return oldValue !== newValue;
 };
 
 const getChangedFields = (originalData: any, newData: any) => {
     const changes: { [key: string]: any } = {};
-    
+
     Object.keys(newData).forEach(key => {
-        const originalValue = key.includes('.') 
-            ? getNestedValue(originalData, key) 
+        const originalValue = key.includes('.')
+            ? getNestedValue(originalData, key)
             : originalData[key];
-        const newValue = key.includes('.') 
-            ? getNestedValue(newData, key) 
+        const newValue = key.includes('.')
+            ? getNestedValue(newData, key)
             : newData[key];
-            
+
         if (hasValueChanged(originalValue, newValue)) {
             if (key.includes('.')) {
                 setNestedValue(changes, key, newValue);
@@ -104,7 +104,7 @@ const getChangedFields = (originalData: any, newData: any) => {
             }
         }
     });
-    
+
     return changes;
 };
 
@@ -194,10 +194,10 @@ export function TableEdit({ config, endpoint, data, onSuccess }: TableEditProps)
                 description: "Record has been updated successfully.",
                 variant: "default"
             });
-            
+
             if (onSuccess) {
                 await onSuccess();
-            }   
+            }
             setFormData(response.data);
             form.reset();
         } catch (error) {
@@ -231,14 +231,14 @@ export function TableEdit({ config, endpoint, data, onSuccess }: TableEditProps)
         try {
             setIsLoading(true)
             toast({
-                title: "Deleting user...",
+                title: `Deleting ${config.title}...`,
                 description: "Please wait while we process your request.",
             })
 
             const response = await DeleteRow(endpoint, data.id);
 
             if (response.status !== 200) {
-                throw new Error(response.message || 'Failed to delete user')
+                throw new Error(response.message || `Failed to Delete ${config.title}...`)
             }
             setIsOpen(false)
             setShowDeleteDialog(false)
@@ -250,7 +250,7 @@ export function TableEdit({ config, endpoint, data, onSuccess }: TableEditProps)
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to delete user",
+                description: error instanceof Error ? error.message : `Failed to Delete ${config.title}...`,
                 variant: "destructive"
             })
         } finally {
@@ -492,7 +492,7 @@ export function TableEdit({ config, endpoint, data, onSuccess }: TableEditProps)
                         <Pencil className="h-4 w-4" />
                     </Button>
                 </SheetTrigger>
-                <SheetContent 
+                <SheetContent
                     className="w-[400px] sm:w-[540px]"
                     onInteractOutside={(e) => {
                         if (isLoading) {
@@ -553,7 +553,7 @@ export function TableEdit({ config, endpoint, data, onSuccess }: TableEditProps)
                             </AlertDialogTitle>
                             <AlertDialogDescription>
                                 {config.edit?.messages?.deleteConfirm?.description ||
-                                    "This action cannot be undone. This will permanently delete the user and remove their data from our servers."}
+                                    `This action cannot be undone. This will permanently delete the ${config.title} and remove their data from our servers.`}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

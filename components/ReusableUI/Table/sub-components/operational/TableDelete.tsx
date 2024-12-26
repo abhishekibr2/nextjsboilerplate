@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { DeleteRow } from "@/utils/utils"
+import { DeleteRow } from "../../utils/utils"
 
 interface TableDeleteProps {
     config: any;

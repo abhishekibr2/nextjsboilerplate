@@ -55,7 +55,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
       id: "name",
       header: "Name",
       accessorKey: "name",
-      className: "w-[200px] text-primary",
+      className: "w-[150px] text-primary",
       sortable: true,
       filterable: true,
       type: "text",
@@ -75,7 +75,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
       id: "email",
       header: "Email",
       accessorKey: "email",
-      className: "w-[250px] text-primary",
+      className: "w-[150px] text-primary",
       sortable: true,
       filterable: true,
       type: "email",
@@ -119,7 +119,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
       id: "age",
       header: "Age",
       accessorKey: "age",
-      className: "w-[100px] text-right text-primary",
+      className: "w-[50px]",
       sortable: true,
       type: "number",
       editable: true,
@@ -177,7 +177,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
       id: "street",
       header: "Street",
       accessorKey: "street",
-      className: "w-[200px] text-primary",
+      className: "w-[150px] text-primary",
       type: "text",
       editable: true,
       editConfig: {
@@ -258,7 +258,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
     }
   ],
   styles: {
-    wrapper: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8",
+    wrapper: "mx-auto px-4 sm:px-6 lg:px-8 py-8",
     title: "text-4xl font-semibold text-primary mb-2",
     description: "text-sm text-gray-500 mb-6",
     table: "",
@@ -298,7 +298,7 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
   export: {
     enabled: true,
     formats: ['csv', 'excel', 'pdf'],
-    fields: ["name","email","status"],
+    fields: ["name", "email", "status"],
     filename: 'users-export'
   },
   import: {
