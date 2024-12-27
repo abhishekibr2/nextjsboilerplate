@@ -32,7 +32,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TableConfig } from "@/types/table.types"
-import { BulkUpdate } from "../../utils/utils"
+import { BulkDelete, BulkUpdate } from "../../utils/utils"
 
 interface TableBulkEditProps {
     config: TableConfig
@@ -85,7 +85,6 @@ export function TableBulkEdit({
     }, [deleteTimer, showDeleteDialog])
 
     const handleSubmit = async (formData: any) => {
-
         if (!selectedColumn) {
             toast({
                 title: "Error",
@@ -95,7 +94,7 @@ export function TableBulkEdit({
             return;
         }
 
-        if (!formData.value && formData.value !== 0) { // Check for both undefined and 0
+        if (!formData.value && formData.value !== 0) {
             toast({
                 title: "Error",
                 description: "Please enter a value",
@@ -106,30 +105,27 @@ export function TableBulkEdit({
 
         try {
             setIsLoading(true);
-
-            // For select fields, we want to send the label, not the value
             const selectedField = config.bulkEdit?.fields?.find(field => field.name === selectedColumn);
             let valueToSend = formData.value;
 
-            // If it's a select field, we need to find the label for the selected value
+            // For select fields, use the value directly, not the label
             if (selectedField?.type === 'select') {
-                const selectedOption = selectedField.options?.find(opt => opt.value.toString() === formData.value);
-                valueToSend = selectedOption?.label || formData.value;
+                valueToSend = formData.value; // Use the value as is, since we're now storing values not labels
             }
-            // console.log({ valueToSend })
-            // console.log({ selectedData })
-            // console.log(selectedField && selectedField.name)
-            const fieldName = selectedField && selectedField.name || "";
+
+            const fieldName = selectedField?.name || "";
 
             const transformedData = selectedData.map((item) => ({
                 id: item.id,
                 [fieldName]: valueToSend,
             }));
+
             const response = await BulkUpdate(endpoint, transformedData);
 
             if (response.status !== 200) {
                 throw new Error('Failed to update items');
             }
+
             toast({
                 title: "Success",
                 description: `Successfully updated ${selectedData.length} items`,
@@ -168,21 +164,11 @@ export function TableBulkEdit({
         if (!config.bulkEdit?.allowDelete) return
         setIsLoading(true)
         try {
-            // const response = await fetch(`/api/${config.endpoints.bulkDelete}`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({
-            //         ids: selectedData.map(item => item.id)
-            //     }),
-            // })
+            const response = await BulkDelete(endpoint, selectedData.map(item => item.id))
 
-            // const result = await response.json()
-
-            // if (!response.ok) {
-            //     throw new Error(result.message || 'Failed to delete items')
-            // }
+            if (response.status !== 200) {
+                throw new Error('Failed to delete items')
+            }
 
             toast({
                 title: "Success",
@@ -335,7 +321,6 @@ export function TableBulkEdit({
                                                     <Select
                                                         value={field.value?.toString() || ''}
                                                         onValueChange={(value) => {
-                                                            // Store the value directly, not the label
                                                             field.onChange(value);
                                                             form.setValue('value', value);
                                                         }}

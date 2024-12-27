@@ -181,18 +181,27 @@ export interface TableProps {
   populate?: {
     fieldName: string;
     source: string;
+    endpoint: string;
   };
 }
 
 export interface ApiResponse<T> {
   data: {
-    items: T[];
+    items: any[];
     pagination: {
       totalItems: number;
       totalPages: number;
       currentPage: number;
       pageSize: number;
     }
+    populatedData?: any;
+  };
+  status: number;
+  message?: string;
+}
+
+export interface ApiPopulatedResponse<T> {
+  data: {
     populatedData?: any;
   };
   status: number;
