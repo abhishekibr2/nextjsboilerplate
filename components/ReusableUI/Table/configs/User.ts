@@ -16,6 +16,7 @@ interface ReusableTableData {
   postal_code: string;
   created_at: Date;
   updated_at: Date;
+  filters: string;
 }
 
 // Define the Zod schema for user data
@@ -37,6 +38,7 @@ const userValidationSchema = z.object({
   gender: z.enum(['Male', 'FeMale', 'Other'], {
     errorMap: () => ({ message: "Invalid gender" }),
   }),
+  filters: z.string().optional(),
   street: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
@@ -255,6 +257,22 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
       sortable: true,
       type: "date",
       editable: false
+    },
+    {
+      id: "filters",
+      header: "Filters",
+      accessorKey: "filters",
+      className: "w-[180px] text-primary",
+      sortable: true,
+      type: "select",
+      options: [],
+      editable: true,
+      editConfig: {
+        type: 'select',
+        name: 'filters',
+        label: 'Filters',
+        options: [],
+      }
     }
   ],
   styles: {
@@ -343,6 +361,12 @@ export const ReusableTableConfig: TableConfig<ReusableTableData> = {
           { label: 'FeMale', value: 'Female' },
           { label: 'Other', value: 'Other' }
         ]
+      },
+      {
+        name: 'filters',
+        label: 'Filters',
+        type: 'select',
+        options: []
       }
     ]
   },
