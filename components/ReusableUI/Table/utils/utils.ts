@@ -1,4 +1,4 @@
-import { AddRowResponse, ApiFilterResponse, ApiKanbanResponse, ApiResponse, ApiUpdateKanbanResponse, DeleteRowResponse, Kanban } from "@/types/table.types";
+import { AddRowResponse, ApiFilterResponse, ApiKanbanResponse, ApiPopulatedResponse, ApiResponse, ApiUpdateKanbanResponse, DeleteRowResponse, Kanban } from "@/types/table.types";
 import { createClient } from '@/utils/supabase/client'
 
 export async function GetUser() {
@@ -12,10 +12,10 @@ export async function FetchTableData<T>(
     paginationParams: string,
     filterParams: string,
     sortParams: string,
-    searchParams: string
+    searchParams: string,
+    populatedData: any
 ): Promise<ApiResponse<T>> {
     const supabase = createClient();
-
     try {
         // Parse parameters
         const { page = 1, pageSize = 10 } = JSON.parse(paginationParams);
@@ -26,12 +26,15 @@ export async function FetchTableData<T>(
         // Calculate pagination
         const start = (page - 1) * pageSize;
         const end = start + pageSize - 1;
-        console.log(filters)
+        // Start base query
+        const selectStatement = populatedData
+            ? `*, ${populatedData.fieldName} (${populatedData.source})`
+            : '*';
+
         // Start base query
         let query = supabase
             .from(endpoint)
-            .select('*', { count: 'exact' });
-
+            .select(selectStatement, { count: 'exact' });
         // Apply filters
         if (Array.isArray(filters) && filters.length > 0) {
             filters.forEach((filter) => {
@@ -108,6 +111,14 @@ export async function FetchTableData<T>(
         if (!data) throw new Error('No data returned from Supabase');
 
         const totalPages = Math.ceil(count! / pageSize);
+        //convert populated object into a string
+        if (populatedData) {
+            data.forEach((item: any) => {
+                if (item[populatedData.fieldName] !== null) {
+                    item[populatedData.fieldName] = item[populatedData.fieldName][populatedData.source]
+                }
+            })
+        }
 
         return {
             data: {
@@ -128,26 +139,29 @@ export async function FetchTableData<T>(
     }
 }
 
-export async function FetchPopulatedData<T>(endpoint: string, fieldName: string, source: string): Promise<ApiResponse<T>> {
+export async function FetchPopulatedData<T>(endpoint: string, fieldName: string, sourceFieldName: string): Promise<ApiPopulatedResponse<T>> {
     try {
         const supabase = createClient()
-        const { data, error } = await supabase.from(endpoint).select(`
+        const { data, error } = await supabase.from(endpoint)
+            .select(`
           id,
-          ${fieldName} ( ${source} )
+          ${sourceFieldName}
         `);
+
+        const populatedData = data?.map((item: any) => {
+            return {
+                value: item.id,
+                label: item[sourceFieldName]
+            }
+        })
+
         if (error) throw error;
         if (!data) {
             throw new Error('No data returned from Supabase');
         }
         return {
             data: {
-                items: data as unknown as T[],
-                pagination: {
-                    totalItems: data?.length || 0,
-                    totalPages: 1,
-                    currentPage: 1,
-                    pageSize: data?.length || 0
-                }
+                populatedData: populatedData as unknown as T[],
             },
             status: 200,
             message: 'Data fetched successfully'
@@ -162,7 +176,6 @@ export async function AddRow<T>(endpoint: string, rowData: any): Promise<ApiResp
     try {
         const supabase = createClient()
         const { data, error } = await supabase.from(endpoint).insert(rowData).select()
-
         if (error) throw error
         if (!data) {
             throw new Error('No data returned from Supabase after insert');
@@ -190,7 +203,7 @@ export async function AddRow<T>(endpoint: string, rowData: any): Promise<ApiResp
 export async function UpdateRow<T>(endpoint: string, rowData: any): Promise<AddRowResponse> {
     try {
         const supabase = createClient();
-
+        console.log(rowData)
         // Extract the ID and prepare update data
         const { id, _id, ...updateData } = rowData;
         const idToUse = id || _id;
@@ -342,10 +355,10 @@ export async function BulkUpdate<T>(endpoint: string, updatedData: any): Promise
     }
 }
 
-export async function BulkDelete<T>(endpoint: string, rowId: string): Promise<DeleteRowResponse> {
+export async function BulkDelete<T>(endpoint: string, rowId: string[]): Promise<DeleteRowResponse> {
     try {
         const supabase = createClient()
-        await supabase.from(endpoint).delete().eq('id', rowId)
+        await supabase.from(endpoint).delete().in('id', rowId)
 
         return {
             status: 200,
