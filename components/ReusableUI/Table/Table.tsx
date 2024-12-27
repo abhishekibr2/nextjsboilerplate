@@ -113,7 +113,7 @@ const formatFilterParams = (filters: FilterValue[]) => {
 };
 
 // Custom Hooks
-const useTableData = (config: TableProps['config'], endpoint: string, sorting: SortingState, searchTerm: string, pagination: PaginationState, filters: FilterValue[]) => {
+const useTableData = (config: TableProps['config'], populate: any, endpoint: string, sorting: SortingState, searchTerm: string, pagination: PaginationState, filters: FilterValue[]) => {
     const [data, setData] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -156,7 +156,8 @@ const useTableData = (config: TableProps['config'], endpoint: string, sorting: S
                 paginationParams,
                 filterParams,
                 sortParams,
-                searchParams
+                searchParams,
+                populate
             );
 
             setData(response.data.items);
@@ -251,12 +252,8 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
     const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
     const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
     const [kanbanView, setKanbanView] = useState(false);
-
-    // Refs
     const searchDebounce = useRef<NodeJS.Timeout | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-
-    // Hooks
     const { toast } = useToast();
     const {
         data,
@@ -267,8 +264,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
         setOperationLoading,
         loadTableData,
         paginationState,
-        setPaginationState
-    } = useTableData(config, endpoint, sorting, searchTerm, pagination, filters);
+    } = useTableData(config, populate, endpoint, sorting, searchTerm, pagination, filters);
 
     const {
         selectedRows,
@@ -344,21 +340,23 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
         try {
             let processedValue = newValue;
 
+            // Handle select type fields
+            if (column.type === 'select' || column.editConfig?.type === 'select') {
+                // For select fields, we already have the value from the Select component
+                processedValue = newValue;
+            }
             // Handle number type fields
-            if (column.type === 'number' || column.editConfig?.type === 'number') {
+            else if (column.type === 'number' || column.editConfig?.type === 'number') {
                 const numberValue = Number(newValue);
                 if (isNaN(numberValue)) {
                     throw new Error('Invalid number');
                 }
                 processedValue = numberValue;
+            }
 
-                // Apply validation if exists
-                if (column.editConfig?.validation?.zodSchema) {
-                    column.editConfig.validation.zodSchema.parse(numberValue);
-                }
-            } else if (column.editConfig?.validation?.zodSchema) {
-                // For Other types, apply validation as before
-                column.editConfig.validation.zodSchema.parse(newValue);
+            // Apply validation if exists
+            if (column.editConfig?.validation?.zodSchema) {
+                column.editConfig.validation.zodSchema.parse(processedValue);
             }
 
             const originalValue = getNestedValue(data[editingCell.rowIndex], editingCell.columnKey);
@@ -398,36 +396,24 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
     const handleBatchUpdate = useCallback(async () => {
         setOperationLoading(true);
         try {
-            const changesByRow = pendingEdits.reduce((acc, edit) => {
-                const key = edit.rowIndex;
-                if (!acc[key]) {
-                    acc[key] = { ...edit.originalData };
-                }
-
-                const keys = edit.columnKey.split('.');
-                let current = acc[key];
-                for (let i = 0; i < keys.length - 1; i++) {
-                    if (!current[keys[i]]) {
-                        current[keys[i]] = {};
-                    }
-                    current = current[keys[i]];
-                }
-                current[keys[keys.length - 1]] = edit.value;
-
-                return acc;
-            }, {} as Record<number, any>);
-
-            const updatePromises = Object.entries(changesByRow).map(async ([rowIndex, rowData]) => {
+            const updatePromises = pendingEdits.map(async (edit) => {
+                const rowData = data[edit.rowIndex];
                 if (!rowData.id) throw new Error('Missing ID for update');
 
-                const response = await UpdateRow(endpoint, rowData);
+                // Create minimal update payload with just the ID and changed field
+                const updatePayload = {
+                    id: rowData.id,
+                    [edit.columnKey]: edit.value
+                };
+
+                const response = await UpdateRow(endpoint, updatePayload);
                 if (response.status !== 200) throw new Error(`Failed to update row ${rowData.id}`);
 
                 // Extract the first item from the response data array
                 const updatedData = response.data[0];
 
                 return {
-                    rowIndex: Number(rowIndex),
+                    rowIndex: edit.rowIndex,
                     data: updatedData
                 };
             });
@@ -437,8 +423,11 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
 
             results.forEach(({ rowIndex, data: updatedData }) => {
                 if (rowIndex >= 0 && rowIndex < newData.length) {
-                    // Completely replace the old data with the new data
-                    newData[rowIndex] = updatedData;
+                    // Merge the updated data with existing data to preserve other fields
+                    newData[rowIndex] = {
+                        ...newData[rowIndex],
+                        ...updatedData
+                    };
                 }
             });
 
@@ -467,7 +456,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
     useEffect(() => {
         if (populate && populate.fieldName && populate.source) {
             const populateData = async () => {
-                const response = await FetchPopulatedData(endpoint, populate.fieldName, populate.source);
+                const response = await FetchPopulatedData(populate.endpoint, populate.fieldName, populate.source);
                 if (response.status === 200) {
                     config.columns.forEach(column => {
                         if (column.accessorKey === populate.fieldName) {
@@ -477,6 +466,15 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                             }
                         }
                     });
+                    if (populate) {
+                        config.bulkEdit?.fields?.forEach(field => {
+                            if (field.name === populate.fieldName) {
+                                field.options = response.data.populatedData;
+                            }
+
+                        }
+                        )
+                    }
                 }
             };
             populateData();
@@ -504,12 +502,14 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
     const renderCell = (row: any, column: any, rowIndex: number) => {
         const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.columnKey === column.accessorKey;
         const value = getNestedValue(row, column.accessorKey);
-        const pendingValue = pendingEdits.find(
+        const pendingEdit = pendingEdits.find(
             edit => edit.rowIndex === rowIndex && edit.columnKey === column.accessorKey
-        )?.value;
+        );
+        const pendingValue = pendingEdit?.value;
 
         if (isEditing) {
             const cellStyle = "p-0"; // Remove padding when editing
+
 
             if (column.type === 'number' || column.editConfig?.type === 'number') {
                 return (
@@ -528,24 +528,22 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                     </div>
                 )
             }
-            if (column.editConfig?.type === 'select') {
+            if (column.type === 'select' || column.editConfig?.type === 'select') {
+                const currentValue = String(value || '');
                 return (
                     <div className={cellStyle}>
                         <Select
-                            defaultValue={String(value)}
-                            onValueChange={(newValue) => {
-                                const selectedOption = column.editConfig.options?.find(
-                                    (opt: any) => opt.value === newValue
-                                );
-                                handleCellEdit(selectedOption?.label || newValue);
-                            }}
+                            defaultValue={currentValue}
+                            onValueChange={handleCellEdit}
                         >
                             <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-0">
-                                <SelectValue placeholder="Select..." />
+                                <SelectValue placeholder="Select...">
+                                    {column.editConfig?.options?.find((opt: any) => String(opt.value) === currentValue)?.label || 'Select...'}
+                                </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                                {column.editConfig.options?.map((option: any) => (
-                                    <SelectItem key={option.value} value={option.value}>
+                                {column.editConfig?.options?.map((option: any) => (
+                                    <SelectItem key={option.value} value={String(option.value)}>
                                         {option.label}
                                     </SelectItem>
                                 ))}
@@ -601,13 +599,23 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
 
         const column = config.columns.find(col => col.accessorKey === accessorKey);
 
-        if (column?.type === 'select') {
-            return value;
+        if (column?.type === 'select' || column?.editConfig?.type === 'select') {
+            const options = column.editConfig?.options || column.options;
+            const option = options?.find((opt: any) => String(opt.value) === String(value));
+            return option ? option.label : value;
         }
 
-        if (value instanceof Date ||
-            accessorKey.toLowerCase().includes('date') ||
-            typeof value === 'string' && !isNaN(Date.parse(value))) {
+        // Handle specific column types or names
+        const isDateField = column?.type === 'date' ||
+            (typeof value === 'string' && (
+                accessorKey === 'createdAt' ||
+                accessorKey === 'updatedAt' ||
+                (accessorKey.toLowerCase().includes('date') &&
+                    !isNaN(Date.parse(value)) && // Make sure it's actually a valid date string
+                    value.includes('-') || value.includes('/') || value.includes('T')) // Check for date-like format
+            ));
+
+        if (isDateField) {
             try {
                 const date = new Date(value);
                 if (!isNaN(date.getTime())) {
@@ -625,20 +633,33 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
             }
         }
 
-        if (typeof value === 'number') {
-            if (accessorKey === 'total' || accessorKey.includes('price')) {
+        // Handle numbers
+        if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+            // Check for monetary fields
+            if (accessorKey === 'total' ||
+                accessorKey.includes('price') ||
+                accessorKey.includes('cost') ||
+                accessorKey.includes('amount')) {
                 return new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: 'USD'
-                }).format(value);
+                }).format(Number(value));
             }
-            return value.toLocaleString();
+
+            // For other numeric fields
+            if (typeof value === 'number') {
+                return value.toLocaleString();
+            }
+            // If it's a string number but not a date, return as is
+            return value;
         }
 
+        // Handle objects
         if (typeof value === 'object') {
             return formatObjectValue(value);
         }
 
+        // Default string handling
         return truncateText(String(value));
     }, [config.columns]);
 
@@ -663,7 +684,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
     }
 
     return (
-        <div className={cn("rounded-lg", config.styles?.wrapper)}>
+        <div className={cn("rounded-lg max-w-7xl", config.styles?.wrapper)}>
             {/* Header Section */}
             <div className="mb-4">
                 {config.title && (
@@ -676,7 +697,7 @@ export function TableComponent({ config, endpoint, populate }: TableProps) {
                 )}
                 {config.description && (
                     <p className={cn(
-                        "text-left text-sm text-gray-500 pb-4",
+                        "text-left text-sm text-gray-500",
                         config.styles?.description
                     )}>
                         {config.description}
