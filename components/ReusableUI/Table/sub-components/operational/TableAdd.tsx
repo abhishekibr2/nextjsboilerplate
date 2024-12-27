@@ -136,7 +136,7 @@ export function TableAdd({ config, onSuccess, endpoint }: TableAddProps) {
                 transformedData.updated_at = new Date();
             }
 
-
+            console.log("Transformed data:", transformedData);
             const response = await AddRow(endpoint, transformedData);
 
             if (!response) {
@@ -366,7 +366,7 @@ export function TableAdd({ config, onSuccess, endpoint }: TableAddProps) {
                         });
                     })}
                 >
-                    <ScrollArea className="h-[450px] pr-4">
+                    <ScrollArea className="h-[550px] pr-4">
                         <div className="grid grid-cols-2 gap-4 py-4">
                             {config.columns.map(renderField)}
                         </div>
