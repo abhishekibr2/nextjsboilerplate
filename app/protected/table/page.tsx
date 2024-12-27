@@ -7,7 +7,12 @@ export default function Home() {
 
     return (
         <main>
-            <TableComponent config={ReusableTableConfig} endpoint="Users" />
+            <TableComponent config={ReusableTableConfig} populate={{
+                fieldName: "filters",
+                source: "name",
+                endpoint: "Filters"
+            }}
+                endpoint="Users" />
         </main>
     )
 }
